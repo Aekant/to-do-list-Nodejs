@@ -9,8 +9,8 @@ const DB = process.env.LOCAL_STRING.replace('<DATABASE>', process.env.DATABASE);
 mongoose.connect(DB, {
   useNewUrlParser: true,
   useCreateIndex: true,
-  useFindAndModify: true,
-  useUnifiedTopology: false
+  useFindAndModify: false,
+  useUnifiedTopology: true
 }).then(con => {
   console.log('Connection to Local Database is successful');
 

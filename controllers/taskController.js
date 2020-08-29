@@ -2,11 +2,13 @@
 const Task = require('./../models/taskModel');
 
 // GET routes handlers
-module.exports.getAllTasks = async (req, res) => {
+module.exports.getAll = async (req, res) => {
   try {
     // Task.find() returns a query
     // we are awaiting the resolved value for the query
-    let tasks = await Task.find();
+    // it is only when we await the query, it is sent to the database
+    let query = Task.find();
+    const tasks = await query;
     res.status(200).json({
       message: 'Success',
       data: {
@@ -21,8 +23,28 @@ module.exports.getAllTasks = async (req, res) => {
   }
 }
 
+module.exports.getById = async (req, res) => {
+  try {
+    // behind the scenes it is equivalent to
+    // db.collection.findOne({id: req.params.id})
+    let query = Task.findById(req.params.id);
+    const task = await query;
+    res.status(200).json({
+      message: 'Success',
+      data: {
+        task
+      }
+    });
+  } catch (err) {
+    res.status(404).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+}
+
 // POST routes handlers
-module.exports.createTask = async (req, res) => {
+module.exports.create = async (req, res) => {
   try {
     // Task.create() returns a promise
     // we will await the resolved value of this promise
@@ -41,4 +63,29 @@ module.exports.createTask = async (req, res) => {
   }
 }
 
-// PATCH route handlers
+// PATCH routes handlers
+module.exports.updateById = async (req, res) => {
+  try {
+    // for this we will use the method provided by mongoose on Model
+    // Model.findByIdAndUpdate()
+    // it takes an id, the object to patch/update with
+    // and a few config options such as running validators again
+    // to ensure that user did not enter any invalid data
+    let query = Task.findOneAndUpdate(req.params.id, req.body, {
+      new: true, //returns the updated document
+      runValidators: true //checks for invalid data
+    });
+    const task = await query;
+    res.status(200).json({
+      message: 'Success',
+      data: {
+        task
+      }
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+}

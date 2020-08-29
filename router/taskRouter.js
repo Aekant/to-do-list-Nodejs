@@ -9,7 +9,13 @@ router.use(express.json());
 // routes
 router
   .route('/')
-  .get(taskController.getAllTasks)
-  .post(taskController.createTask);
+  .get(taskController.getAll)
+  .post(taskController.create);
+
+router
+  .route('/:id')
+  .get(taskController.getById)
+  .patch(taskController.updateById);
+
 
 module.exports = router;

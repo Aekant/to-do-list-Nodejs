@@ -21,15 +21,32 @@ const taskSchema = new mongoose.Schema({
   recentViewActivity: [Date],
   deadline: {
     type: Date,
-    required: [true, 'A deadline for the task must be specified']
+    required: [true, 'A deadline for the task must be specified'],
+    // Using a custom validator to make sure the deadline is 1 min
+    // greater than creation time at the time of creation
+    // and should be 1 min long at the time of updating
+    validate: {
+      validator: function (input) {
+        if (new Date(input).getTime() > (Date.now() + 60000)) {
+          return true;
+        } else {
+          return false;
+        }
+      },
+      message: 'Deadline should be at least 1 min long'
+    }
   },
   title: {
     type: String,
     required: [true, 'A title for the task is required'],
     maxlength: [40, 'A title cannot be longer than 40 characters'],
-    unique: true
+    unique: true,
+    trim: true
   },
-  description: String,
+  description: {
+    type: String,
+    trim: true
+  },
   slug: String
 }, {
   toJSON: { virtuals: true },
@@ -46,7 +63,7 @@ taskSchema.virtual('dueTime').get(function () {
     let date = new Date(diff);
     return `${date.getUTCDate() - 1}:${date.getUTCHours()}:${date.getUTCMinutes()}`;
   } else {
-    return '------';
+    return 'XXXXXX';
   }
 });
 
