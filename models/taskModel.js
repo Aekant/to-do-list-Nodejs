@@ -57,9 +57,12 @@ const taskSchema = new mongoose.Schema({
 // virtual properties are not stored in the documents
 // therefore we cannot query documents by virtual properties
 // they are calculated form the properties of the documents when we query them
+// the callback function has access to the document using the this keyword
 taskSchema.virtual('dueTime').get(function () {
   let diff = this.deadline.getTime() - Date.now();
-  if (diff > 0) {
+  if (this.status === 'COMPLETED' || this.status === 'LATE-COMPLETION') {
+    return '------';
+  } else if (diff > 0) {
     let date = new Date(diff);
     return `${date.getUTCDate() - 1}:${date.getUTCHours()}:${date.getUTCMinutes()}`;
   } else {
