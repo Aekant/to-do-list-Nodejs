@@ -1,6 +1,6 @@
 const express = require('express');
 const app = require('../app');
-const taskController = require('./../controllers/taskController');
+const taskController = require('../controllers/taskController');
 const router = express.Router();
 
 // middleware
@@ -15,7 +15,8 @@ router
 router
   .route('/:id')
   .get(taskController.getById)
-  .patch(taskController.updateById);
+  .patch(taskController.updateById)
+  .delete(taskController.deleteById);
 
 
 module.exports = router;
