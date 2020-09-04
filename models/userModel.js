@@ -13,7 +13,8 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: [12, 'Password must be at least 12 characters long']
+    minlength: [12, 'Password must be at least 12 characters long'],
+    select: false
   },
   passwordConfirm: {
     type: String,
@@ -43,6 +44,12 @@ userSchema.pre('save', async function (next) {
   this.passwordConfirm = undefined;
   next();
 });
+
+// defining an instance method
+userSchema.methods.correctPassword = async function (candidatePass, hashedPass) {
+  // this.password is not accessible
+  return await bcrypt.compare(candidatePass, hashedPass);
+}
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
