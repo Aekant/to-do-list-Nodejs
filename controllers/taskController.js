@@ -174,7 +174,7 @@ module.exports.getStats2 = async (req, res) => {
   try {
     let aggr = Task.aggregate([
       {
-        $match: { status: 'NEW' }
+        $match: { status: 'LATE-COMPLETION' }
       },
       {
         $group: {

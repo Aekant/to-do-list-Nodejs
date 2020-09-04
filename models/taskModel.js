@@ -72,7 +72,7 @@ taskSchema.virtual('dueTime').get(function () {
 
 // creating a pre hook for taskSchema 
 // Why we need this? Well we have to create a slug for the title
-taskSchema.pre('save', function () {
+taskSchema.pre('save', function (next) {
   this.slug = slugify(this.title, { lower: true });
   next();
 });
