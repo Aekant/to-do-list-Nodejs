@@ -1,11 +1,12 @@
 const express = require('express');
 const taskController = require('../controllers/taskController');
+const authController = require('./../controllers/authController');
 const router = express.Router();
 
 // routes
 router
   .route('/')
-  .get(taskController.getAll)
+  .get(authController.gaurd, taskController.getAll)
   .post(taskController.create);
 
 // If I place this route below the :id one then

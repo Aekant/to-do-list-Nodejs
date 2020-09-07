@@ -9,5 +9,8 @@ router.
 router.
   post('/login', authController.login);
 
+router.
+  post('/forgotPassword', authController.forgotPassword);
+
 
 module.exports = router;

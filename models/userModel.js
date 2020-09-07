@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const val = require('validator');
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto');
+const { stringify } = require('querystring');
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -30,15 +32,23 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'An email is required'],
     lowercase: true,
-    validate: { validator: val.isEmail, message: 'Enter a valid email' }
+    validate: { validator: val.isEmail, message: 'Enter a valid email' },
+    unique: true
   },
-  photo: String
+  photo: String,
+  passwordChangedAt: Date,
+  passwordResetToken: String,
+  passwordResetTokenExpires: Date
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
 userSchema.pre('save', async function (next) {
+  // we dont want to run this hook if the password isnt changed at all
+  // we might have updated some other property and then saved the doc
+  // that would trigger this hook regardless of the fact that pass
+  // changed or not so we check if the pass was changed (?)
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   this.passwordConfirm = undefined;
@@ -50,6 +60,31 @@ userSchema.methods.correctPassword = async function (candidatePass, hashedPass) 
   // this.password is not accessible
   return await bcrypt.compare(candidatePass, hashedPass);
 }
+
+userSchema.methods.verifyPasswordChange = async function (JWTTimeStamp) {
+  // this field only exists if a password was changed after the user was 
+  // created and if this exists we are going to continue with comparison
+  // otherwise just return the default false response.
+  if (this.passwordChangedAt) {
+    return JWTTimeStamp < ((this.passwordChangedAt.getTime() / 1000) * 1);
+  }
+
+  // not changed
+  return false;
+}
+
+userSchema.methods.createPasswordResetToken = async function () {
+  //generates a random 32 character token which is converted to hex
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  // use sha256 hashing, update from the resetToken variable
+  // then store it as hexadecimal
+  this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000;
+
+  // returns plain token too
+  return resetToken;
+}
+
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
