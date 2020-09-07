@@ -107,6 +107,7 @@ module.exports.gaurd = async (req, res, next) => {
 
     // check if the token is valid
     // we use the jwt.verify method
+    // if not valid it sends an error which is caught in the catch block
     const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
     // at this point we should  be done but let say
@@ -127,6 +128,8 @@ module.exports.gaurd = async (req, res, next) => {
     }
 
     req.user = user;
+    // if the req made its way till here, it is going to be granted
+    // permission to access the gaurded route
     next();
   } catch (err) {
     res.status(401).json({
