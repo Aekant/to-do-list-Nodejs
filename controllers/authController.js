@@ -2,6 +2,8 @@ const User = require('./../models/userModel');
 const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
 const sendEmail = require('./../utils/email');
+const crypto = require('crypto');
+const { doesNotMatch } = require('assert');
 
 // jwt sign token method
 const signToken = (payload) => {
@@ -121,7 +123,8 @@ module.exports.gaurd = async (req, res, next) => {
     }
     // in addition to that let say user changes its password and the
     // prev token still exists. 
-    if (user.verifyPasswordChange(decoded.iat)) {
+    // make sure to await all the functions which are async
+    if (await user.verifyPasswordChange(decoded.iat)) {
       return res.status(401).json({
         message: 'User password was recently changed, please login again'
       });
@@ -139,7 +142,7 @@ module.exports.gaurd = async (req, res, next) => {
   }
 }
 
-// forgot password 
+// forgot password and reset
 module.exports.forgotPassword = async (req, res, next) => {
   try {
     // find the user by email
@@ -191,6 +194,62 @@ module.exports.forgotPassword = async (req, res, next) => {
     }
   } catch (err) {
     res.status(401).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+}
+
+module.exports.resetPassword = async (req, res) => {
+  try {
+    // we query the user using the token but the token stored in database is 
+    // in hashed form therefore we need to generate the hash first
+    const token = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken: token,
+      passwordResetTokenExpires: { $gt: Date.now() }
+    });
+    // if the token is wrong or there was no token at all
+    // or if the time is expired we wont get anything
+
+    if (!user) {
+      return res.status(400).json({
+        message: 'Bad Request'
+      });
+    }
+
+    // if we reach this point then it means the user exists
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    user.passwordResetToken = undefined;
+    user.passwordResetTokenExpires = undefined;
+
+    // we want all the validators to run this time 
+    // because we need to make sure the two pass are same
+    // also before saving the document we want to add passwordChangedAt 
+    // timestamp so we do it in the pre hook
+
+    // Apparently JWT is issued after this await query yet, the issue time
+    // of JWT sometimes is lower than password reset resulting in failing
+    // a check in gaurd 
+    // work around is to subtract some milliseconds from passwordChangedAt 
+    // timeStamp
+    await user.save();
+
+    // issuing a JWT to immediately sign in user after pass reset
+    const access_token = signToken(user);
+
+    // send out the JWT with the response
+    res.status(200).json({
+      message: 'Success',
+      access_token,
+      data: {
+        user
+      }
+    });
+  } catch (err) {
+    res.status(400).json({
       message: 'Failed',
       error: err.message
     });

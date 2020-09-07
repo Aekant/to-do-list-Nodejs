@@ -55,6 +55,15 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
+userSchema.pre('save', async function (next) {
+
+  // if the password is not changed or if the document is newly created
+  // we want to exit so
+  if (!this.isModified('password') || this.isNew) return next();
+  this.passwordChangedAt = (Date.now() - 1000);
+  next();
+});
+
 // defining an instance method
 userSchema.methods.correctPassword = async function (candidatePass, hashedPass) {
   // this.password is not accessible
