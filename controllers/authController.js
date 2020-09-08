@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
 const sendEmail = require('./../utils/email');
 const crypto = require('crypto');
-const { doesNotMatch } = require('assert');
 
 // jwt sign token method
 const signToken = (payload) => {
@@ -15,6 +14,31 @@ const signToken = (payload) => {
     {
       expiresIn: process.env.JWT_EXPIRES
     });
+}
+
+// sign token and send with response
+const sendTokenResponse = (res, statusCode, user) => {
+  const access_token = signToken(user);
+  // setting cookie options
+  const cookieOptions = {
+    expiresIn: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES * 86400000
+    ),
+    httpOnly: true
+  }
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  // sending out a cookie
+  res.cookie('jwt', access_token, cookieOptions);
+  // we have enabled select to false but at the time of creation that does not
+  // apply
+  user.password = undefined;
+  res.status(statusCode).json({
+    message: 'Success',
+    access_token,
+    data: {
+      user
+    }
+  });
 }
 
 // for signUp route
@@ -32,16 +56,10 @@ module.exports.signUp = async (req, res) => {
     // since when a user is created the user is automatically logged in
     // therefore we can issue a token to the user
     // another scenario will be when a previously registered user will log in
-    const access_token = signToken(user);
+
 
     // adding one more field "access_token" to the response object
-    res.status(201).json({
-      message: 'Success',
-      access_token,
-      data: {
-        user
-      }
-    });
+    sendTokenResponse(res, 201, user);
   } catch (err) {
     res.status(400).json({
       message: 'Failed',
@@ -49,7 +67,6 @@ module.exports.signUp = async (req, res) => {
     });
   }
 }
-
 
 // for signIn route
 module.exports.login = async (req, res, next) => {
@@ -76,12 +93,9 @@ module.exports.login = async (req, res, next) => {
     });
   }
 
-  const access_token = signToken(user);
   // if everything is ok then send the token
-  res.status(200).json({
-    message: 'Success',
-    access_token
-  });
+  sendTokenResponse(res, 200, user);
+
 }
 
 // gaurds
@@ -238,16 +252,8 @@ module.exports.resetPassword = async (req, res) => {
     await user.save();
 
     // issuing a JWT to immediately sign in user after pass reset
-    const access_token = signToken(user);
-
     // send out the JWT with the response
-    res.status(200).json({
-      message: 'Success',
-      access_token,
-      data: {
-        user
-      }
-    });
+    sendTokenResponse(res, 200, user);
   } catch (err) {
     res.status(400).json({
       message: 'Failed',
@@ -256,6 +262,7 @@ module.exports.resetPassword = async (req, res) => {
   }
 }
 
+// update password for logged in users
 module.exports.updatePassword = async (req, res) => {
   try {
     // since this route is only accessible to logged in users therefore, there
@@ -280,11 +287,7 @@ module.exports.updatePassword = async (req, res) => {
     // send out a new token to the user
     // the prev token won't be valid because the timeStamp of password change
     // is greater than the issue time of previous token
-    const access_token = signToken(user);
-    res.status(200).json({
-      message: 'Success',
-      access_token
-    });
+    sendTokenResponse(res, 200, user);
   } catch (err) {
     res.status(400).json({
       message: 'Failed',

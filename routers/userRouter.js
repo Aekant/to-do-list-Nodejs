@@ -1,7 +1,10 @@
 const authController = require('./../controllers/authController');
+const userController = require('./../controllers/userController');
 const express = require('express');
 
 const router = express.Router();
+
+router.route('/').get(userController.getAll);
 
 router.
   post('/signup', authController.signUp);
@@ -17,5 +20,8 @@ router.
 
 router.
   patch('/updateMyPassword', authController.gaurd, authController.updatePassword);
+
+router.
+  delete('/deactivate', authController.gaurd, userController.delete);
 
 module.exports = router;

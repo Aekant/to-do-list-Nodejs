@@ -33,12 +33,17 @@ const userSchema = new mongoose.Schema({
     required: [true, 'An email is required'],
     lowercase: true,
     validate: { validator: val.isEmail, message: 'Enter a valid email' },
-    unique: true
+    unique: [true, 'Email already exists']
   },
   photo: String,
   passwordChangedAt: Date,
   passwordResetToken: String,
-  passwordResetTokenExpires: Date
+  passwordResetTokenExpires: Date,
+  active: {
+    type: Boolean,
+    default: true,
+    select: false
+  }
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
@@ -61,6 +66,12 @@ userSchema.pre('save', async function (next) {
   // we want to exit so
   if (!this.isModified('password') || this.isNew) return next();
   this.passwordChangedAt = (Date.now() - 1000);
+  next();
+});
+
+// defining a query middleware to filter out all the deactivated accounts
+userSchema.pre(/^find/, function (next) {
+  this.find({ active: { $ne: false } });
   next();
 });
 
