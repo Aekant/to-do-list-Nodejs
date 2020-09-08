@@ -255,3 +255,40 @@ module.exports.resetPassword = async (req, res) => {
     });
   }
 }
+
+module.exports.updatePassword = async (req, res) => {
+  try {
+    // since this route is only accessible to logged in users therefore, there
+    // is a gaurd middleware before this function on this route
+    // hence we can assume the req object has the user property on it
+
+    const user = await User.findById(req.user._id).select('+password');
+
+    if (!await user.correctPassword(req.body.passwordCurrent, user.password)) {
+      return res.status(401).json({
+        message: 'Authentication failed: Incorrect password'
+      });
+    }
+
+    // the validators will check if the two passwords are same 
+    // the pre hook will hash the new password
+    // the pre hook for timeSstamp is also going to run
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    await user.save();
+
+    // send out a new token to the user
+    // the prev token won't be valid because the timeStamp of password change
+    // is greater than the issue time of previous token
+    const access_token = signToken(user);
+    res.status(200).json({
+      message: 'Success',
+      access_token
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+}

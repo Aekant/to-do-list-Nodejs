@@ -15,4 +15,7 @@ router.
 router.
   patch('/resetPassword/:token', authController.resetPassword);
 
+router.
+  patch('/updateMyPassword', authController.gaurd, authController.updatePassword);
+
 module.exports = router;
