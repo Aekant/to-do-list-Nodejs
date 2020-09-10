@@ -10,7 +10,7 @@ const hpp = require('hpp');
 
 
 const limiter = rateLimit({
-  max: 3,
+  max: 100,
   windowMs: 60 * 60 * 1000,
   message: 'You are rate limited please try again'
 });

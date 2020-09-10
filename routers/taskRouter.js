@@ -3,10 +3,13 @@ const taskController = require('../controllers/taskController');
 const authController = require('./../controllers/authController');
 const router = express.Router();
 
+// middleware for this route
+router.use(authController.gaurd);
+
 // routes
 router
   .route('/')
-  .get(authController.gaurd, taskController.getAll)
+  .get(taskController.getAll)
   .post(taskController.create);
 
 // If I place this route below the :id one then
