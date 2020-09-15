@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const val = require('validator');
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto');
-const { stringify } = require('querystring');
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -10,17 +9,21 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: [4, 'A username must be at least 4 characters long'],
     maxlength: [20, 'Username cannot exceed 20 characters'],
-    unique: [true, 'Username already exists']
+    unique: [true, 'Choose another username']
   },
   password: {
     type: String,
-    required: true,
+    required: function () {
+      return this.provider === 'local';
+    },
     minlength: [12, 'Password must be at least 12 characters long'],
     select: false
   },
   passwordConfirm: {
     type: String,
-    required: true,
+    required: function () {
+      return this.provider === 'local';
+    },
     validate: {
       validator: function (inp) {
         return inp === this.password;
@@ -39,6 +42,15 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetTokenExpires: Date,
+  provider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local'
+  },
+  googleId: {
+    type: String,
+    unique: true
+  },
   active: {
     type: Boolean,
     default: true,
@@ -46,10 +58,14 @@ const userSchema = new mongoose.Schema({
   }
 }, {
   toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toObject: { virtuals: true },
+  timestamps: { createdAt: true, updatedAt: false }
 });
 
 userSchema.pre('save', async function (next) {
+  // if the provider is local then ok otherwise we dont want to run this
+  // pre hook cuz we dont have passwords after all
+  if (this.provider !== 'local') return next();
   // we dont want to run this hook if the password isnt changed at all
   // we might have updated some other property and then saved the doc
   // that would trigger this hook regardless of the fact that pass
@@ -61,7 +77,8 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.pre('save', async function (next) {
-
+  // only for local signed up users
+  if (this.provider !== 'local') return next();
   // if the password is not changed or if the document is newly created
   // we want to exit so
   if (!this.isModified('password') || this.isNew) return next();

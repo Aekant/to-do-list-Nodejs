@@ -7,10 +7,12 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
+const passport = require('passport');
+require('./strategies/googleAuth')(passport);
 
 
 const limiter = rateLimit({
-  max: 3,
+  max: 100,
   windowMs: 60 * 60 * 1000,
   message: 'You are rate limited please try again'
 });

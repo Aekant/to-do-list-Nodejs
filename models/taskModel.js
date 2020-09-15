@@ -47,7 +47,14 @@ const taskSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  slug: String
+  slug: String,
+  // parent referencing 
+  // adding id of user who will create this task
+  userId: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: true
+  }
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }

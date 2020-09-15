@@ -17,7 +17,7 @@ const signToken = (payload) => {
 }
 
 // sign token and send with response
-const sendTokenResponse = (res, statusCode, user) => {
+module.exports.sendTokenResponse = (res, statusCode, user) => {
   const access_token = signToken(user);
   // setting cookie options
   const cookieOptions = {
@@ -30,7 +30,8 @@ const sendTokenResponse = (res, statusCode, user) => {
   // sending out a cookie
   res.cookie('jwt', access_token, cookieOptions);
   // we have enabled select to false but at the time of creation that does not
-  // apply
+  // apply, this undefined does not make the password in the database undefined but
+  // only in response in postmanor whatever
   user.password = undefined;
   res.status(statusCode).json({
     message: 'Success',
@@ -85,9 +86,12 @@ module.exports.login = async (req, res, next) => {
   // the + here means add on top of all the prop being retrieved by 
   // default
   const user = await User.findOne({ username }).select('+password');
+  // now this password field can be null too because let say a google
+  // authenticated user tries to login using a random  password, but in the
+  // database its null so we have to check it right here
 
   // we might not find the user or the password might be wrong then
-  if (!user || !await user.correctPassword(password, user.password)) {
+  if (!user || !user.password || await user.correctPassword(password, user.password)) {
     return res.status(401).json({
       message: 'Authentication failed: Incorrect username or password'
     });
@@ -138,11 +142,16 @@ module.exports.gaurd = async (req, res, next) => {
     // in addition to that let say user changes its password and the
     // prev token still exists. 
     // make sure to await all the functions which are async
-    if (await user.verifyPasswordChange(decoded.iat)) {
+    // 
+
+    // well the if statement wont even bother to evaluate the second condition if first
+    // fails so no error
+    if (user.provider === 'local' && await user.verifyPasswordChange(decoded.iat)) {
       return res.status(401).json({
         message: 'User password was recently changed, please login again'
       });
     }
+
 
     req.user = user;
     // if the req made its way till here, it is going to be granted
@@ -162,7 +171,8 @@ module.exports.forgotPassword = async (req, res, next) => {
     // find the user by email
     const user = await User.findOne({ email: req.body.email });
     // if the user is not found send an error response
-    if (!user) {
+    // oauth users would never pass this check
+    if (!user || user.provider !== 'local') {
       return res.status(404).json({
         message: 'No user found with the provided email'
       });
@@ -270,6 +280,12 @@ module.exports.updatePassword = async (req, res) => {
     // hence we can assume the req object has the user property on it
 
     const user = await User.findById(req.user._id).select('+password');
+
+    if (user.provider !== 'local') {
+      return res.status(400).json({
+        message: 'Bad Request'
+      });
+    }
 
     if (!await user.correctPassword(req.body.passwordCurrent, user.password)) {
       return res.status(401).json({

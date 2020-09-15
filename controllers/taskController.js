@@ -1,13 +1,15 @@
 // Importing the Task Model to create a task
 const Task = require('./../models/taskModel');
 const APIFeatures = require('./../utils/apiFeatures');
-const { Query } = require('mongoose');
 
 // GET routes handlers
 module.exports.getAll = async (req, res) => {
   try {
+
+    // gets only the tasks which belongs to this logged in user
+    const filter = { userId: req.user.id };
     // Task.find() returns a query
-    const features = new APIFeatures(Task.find(), req.query)
+    const features = new APIFeatures(Task.find(filter), req.query)
       .filter()
       .sort()
       .limit()
@@ -36,7 +38,9 @@ module.exports.getById = async (req, res) => {
   try {
     // behind the scenes it is equivalent to
     // db.collection.findOne({id: req.params.id})
-    let query = Task.findById(req.params.id);
+    // this make sures that a logged in user cannot access the task
+    // he/she never created
+    let query = Task.find({ _id: req.params.id, userId: req.user.id });
     const task = await query;
     res.status(200).json({
       message: 'Success',
@@ -55,6 +59,8 @@ module.exports.getById = async (req, res) => {
 // POST routes handlers
 module.exports.create = async (req, res) => {
   try {
+    // since this is a gaurded route we have a user object on the req object
+    req.body.userId = req.user.id;
     // Task.create() returns a promise
     // we will await the resolved value of this promise
     let task = await Task.create(req.body);
@@ -80,7 +86,9 @@ module.exports.updateById = async (req, res) => {
     // it takes an id, the object to patch/update with
     // and a few config options such as running validators again
     // to ensure that user did not enter any invalid data
-    let query = Task.findByIdAndUpdate(req.params.id, req.body, {
+    let query = Task.findOneAndUpdate({
+      _id: req.params.id, userId: req.user.id
+    }, req.body, {
       // returns the updated document
       new: true,
       // checks for invalid data
@@ -115,7 +123,7 @@ module.exports.updateById = async (req, res) => {
 // Delete routes handlers
 module.exports.deleteById = async (req, res) => {
   try {
-    let query = Task.findByIdAndDelete(req.params.id);
+    let query = Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     const task = await query;
     res.status(204).json({
       message: 'Success',
@@ -133,6 +141,16 @@ module.exports.deleteById = async (req, res) => {
 module.exports.getStats = async (req, res) => {
   try {
     let aggr = Task.aggregate([
+      {
+        $match: {
+          // here userId is of type ObjectId if we use the conventional getter
+          // id for _id then it would return us a string and in aggregation
+          // pipeline mongoDB does not cast a string to ObjectId therefore,
+          // userId: req.user.id will return 0 documents
+          userId: req.user._id
+        }
+      }
+      ,
       {
         $group: {
           // we don't want to group them by anything, we want to check all of
@@ -174,7 +192,7 @@ module.exports.getStats2 = async (req, res) => {
   try {
     let aggr = Task.aggregate([
       {
-        $match: { status: 'LATE-COMPLETION' }
+        $match: { $and: [{ status: 'LATE-COMPLETION' }, { userId: req.user._id }] }
       },
       {
         $group: {
