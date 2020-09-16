@@ -76,34 +76,40 @@ module.exports.signUp = async (req, res) => {
 
 // for signIn route
 module.exports.login = async (req, res, next) => {
+  try {
+    // user will send the credentials in the body so we extract those
+    const { username, password } = req.body;
 
-  // user will send the credentials in the body so we extract those
-  const { username, password } = req.body;
+    // if either of the two fields does not exist return an error response
+    if (!username || !password) {
+      return res.status(400).json({
+        message: 'Please provide the required credentials'
+      });
+    }
 
-  // if either of the two fields does not exist return an error response
-  if (!username || !password) {
-    return res.status(400).json({
-      message: 'Please provide the required credentials'
+    // now we find the user in the database by username
+    // the + here means add on top of all the prop being retrieved by 
+    // default
+    const user = await User.findOne({ username }).select('+password');
+    // now this password field can be null too because let say a google
+    // authenticated user tries to login using a random  password, but in the
+    // database its null so we have to check it right here
+
+    // we might not find the user or the password might be wrong then
+    if (!user || !user.password || await user.correctPassword(password, user.password)) {
+      return res.status(401).json({
+        message: 'Authentication failed: Incorrect username or password'
+      });
+    }
+
+    // if everything is ok then send the token
+    sendTokenResponse(res, 200, user);
+  } catch (err) {
+    res.status(400).json({
+      message: 'Failed',
+      error: err.message
     });
   }
-
-  // now we find the user in the database by username
-  // the + here means add on top of all the prop being retrieved by 
-  // default
-  const user = await User.findOne({ username }).select('+password');
-  // now this password field can be null too because let say a google
-  // authenticated user tries to login using a random  password, but in the
-  // database its null so we have to check it right here
-
-  // we might not find the user or the password might be wrong then
-  if (!user || !user.password || await user.correctPassword(password, user.password)) {
-    return res.status(401).json({
-      message: 'Authentication failed: Incorrect username or password'
-    });
-  }
-
-  // if everything is ok then send the token
-  sendTokenResponse(res, 200, user);
 }
 
 // gaurds

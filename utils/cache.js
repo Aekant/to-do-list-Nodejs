@@ -11,12 +11,13 @@ client.on('error', (err) => {
 
 module.exports.client = client;
 
+// this function will be called in any route where we want to do cache
 module.exports.setCache = (key, expireTime, data) => {
-  // here people would do JSON.stringify(data) this would end up stringifying the tasks twice !!
-
+  // data must be a string
   client.setex(key, expireTime, data);
 }
 
+// this function will be called before any route in which we have implemented cache
 module.exports.cached = (key, req, res, next) => {
   client.get(key, (err, cachedData) => {
     if (err) {
@@ -29,7 +30,30 @@ module.exports.cached = (key, req, res, next) => {
     if (cachedData) {
       res.status(200).json({
         message: 'Success',
+        source: 'cache',
         data: JSON.parse(cachedData)
+      })
+    } else {
+      next();
+    }
+  });
+}
+
+module.exports.cachedId = (key, req, res, next) => {
+  client.get(key, (err, cachedData) => {
+    if (err) {
+      return res.status(400).json({
+        message: 'Failed',
+        error: err.message
+      })
+    }
+
+    if (cachedData) {
+      const task = JSON.parse(cachedData).find(el => el.id === req.params.id);
+      res.status(200).json({
+        message: 'Success',
+        source: 'cache',
+        data: task
       })
     } else {
       next();

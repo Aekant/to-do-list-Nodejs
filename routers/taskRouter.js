@@ -29,7 +29,7 @@ router
 
 router
   .route('/:id')
-  .get(taskController.getById)
+  .get((req, res, next) => cache.cachedId(`${req.user.id}/tasks`, req, res, next), taskController.getById)
   .patch(taskController.updateById)
   .delete(taskController.deleteById);
 

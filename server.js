@@ -2,6 +2,8 @@ const dotenv = require('dotenv');
 dotenv.config({ path: './config.env' });
 const app = require('./app');
 const mongoose = require('mongoose');
+
+// creates a connection to Redis as soon as the server starts running
 require('./utils/cache');
 
 // setting up the Database connection
