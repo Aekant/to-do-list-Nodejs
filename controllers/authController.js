@@ -17,7 +17,7 @@ const signToken = (payload) => {
 }
 
 // sign token and send with response
-module.exports.sendTokenResponse = (res, statusCode, user) => {
+const sendTokenResponse = (res, statusCode, user) => {
   const access_token = signToken(user);
   // setting cookie options
   const cookieOptions = {
@@ -41,6 +41,11 @@ module.exports.sendTokenResponse = (res, statusCode, user) => {
     }
   });
 }
+
+// doing so because we want to use this function to send token in case of
+// oauth and we cannot use exported methods inside the modules thats why
+// exporting it separately
+module.exports.sendTokenResponse = sendTokenResponse;
 
 // for signUp route
 module.exports.signUp = async (req, res) => {
@@ -99,7 +104,6 @@ module.exports.login = async (req, res, next) => {
 
   // if everything is ok then send the token
   sendTokenResponse(res, 200, user);
-
 }
 
 // gaurds

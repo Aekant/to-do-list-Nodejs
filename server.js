@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 dotenv.config({ path: './config.env' });
 const app = require('./app');
 const mongoose = require('mongoose');
+require('./utils/cache');
 
 // setting up the Database connection
 const DB = process.env.LOCAL_STRING.replace('<DATABASE>', process.env.DATABASE);

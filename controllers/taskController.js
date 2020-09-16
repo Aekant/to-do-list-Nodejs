@@ -1,6 +1,7 @@
 // Importing the Task Model to create a task
 const Task = require('./../models/taskModel');
 const APIFeatures = require('./../utils/apiFeatures');
+const cache = require('./../utils/cache');
 
 // GET routes handlers
 module.exports.getAll = async (req, res) => {
@@ -20,6 +21,11 @@ module.exports.getAll = async (req, res) => {
     // we are awaiting the resolved value for the query
     // it is only when we await the query, it is sent to the database
     const tasks = await features.query;
+
+    // caching
+    const key = `${req.user.id}/tasks`;
+    cache.setCache(key, process.env.CACHE_EXPIRE, JSON.stringify(tasks));
+
     res.status(200).json({
       message: 'Success',
       data: {

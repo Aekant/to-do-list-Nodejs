@@ -2,14 +2,17 @@ const express = require('express');
 const taskController = require('../controllers/taskController');
 const authController = require('./../controllers/authController');
 const router = express.Router();
+const cache = require('./../utils/cache');
 
 // middleware for this route
 router.use(authController.gaurd);
 
 // routes
+// calling a cached function to check if the data is cached then save the
+// hassle of mongo query
 router
   .route('/')
-  .get(taskController.getAll)
+  .get((req, res, next) => cache.cached(`${req.user.id}/tasks`, req, res, next), taskController.getAll)
   .post(taskController.create);
 
 // If I place this route below the :id one then
