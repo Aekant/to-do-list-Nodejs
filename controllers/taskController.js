@@ -1,11 +1,11 @@
 // Importing the Task Model to create a task
 const Task = require('./../models/taskModel');
 const APIFeatures = require('./../utils/apiFeatures');
+const cache = require('./../utils/cache');
 
 // GET routes handlers
 module.exports.getAll = async (req, res) => {
   try {
-
     // gets only the tasks which belongs to this logged in user
     const filter = { userId: req.user.id };
     // Task.find() returns a query
@@ -20,6 +20,12 @@ module.exports.getAll = async (req, res) => {
     // we are awaiting the resolved value for the query
     // it is only when we await the query, it is sent to the database
     const tasks = await features.query;
+
+    // caching
+    // this method makes use of key method defined in cache.js to automatically
+    // create keys from the req object
+    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify(tasks));
+
     res.status(200).json({
       message: 'Success',
       data: {
@@ -57,7 +63,7 @@ module.exports.getById = async (req, res) => {
 }
 
 // POST routes handlers
-module.exports.create = async (req, res) => {
+module.exports.create = async (req, res, next) => {
   try {
     // since this is a gaurded route we have a user object on the req object
     req.body.userId = req.user.id;
@@ -70,6 +76,7 @@ module.exports.create = async (req, res) => {
         task
       }
     });
+    next();
   } catch (err) {
     res.status(400).json({
       message: 'Failed',
@@ -79,7 +86,7 @@ module.exports.create = async (req, res) => {
 }
 
 // PATCH routes handlers
-module.exports.updateById = async (req, res) => {
+module.exports.updateById = async (req, res, next) => {
   try {
     // for this we will use the method provided by mongoose on Model
     // Model.findByIdAndUpdate()
@@ -112,6 +119,7 @@ module.exports.updateById = async (req, res) => {
         task
       }
     });
+    next();
   } catch (err) {
     res.status(400).json({
       message: 'Failed',
@@ -121,7 +129,7 @@ module.exports.updateById = async (req, res) => {
 }
 
 // Delete routes handlers
-module.exports.deleteById = async (req, res) => {
+module.exports.deleteById = async (req, res, next) => {
   try {
     let query = Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     const task = await query;
@@ -129,6 +137,7 @@ module.exports.deleteById = async (req, res) => {
       message: 'Success',
       data: null
     });
+    next();
   } catch (err) {
     res.status(404).json({
       message: 'Failed',
@@ -174,6 +183,9 @@ module.exports.getStats = async (req, res) => {
     ]);
 
     let stats = await aggr;
+
+    // setting cache for stats
+    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify(stats));
     res.status(200).json({
       message: 'Success',
       data: {
@@ -188,7 +200,7 @@ module.exports.getStats = async (req, res) => {
   }
 }
 
-module.exports.getStats2 = async (req, res) => {
+module.exports.lateCompleted = async (req, res) => {
   try {
     let aggr = Task.aggregate([
       {
@@ -208,6 +220,9 @@ module.exports.getStats2 = async (req, res) => {
       }
     ]);
     const stats = await aggr;
+
+    // setting cache
+    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify(stats));
     res.status(200).json({
       message: 'Success',
       data: {

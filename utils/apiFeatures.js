@@ -63,9 +63,9 @@ class APIFeatures {
 
   paginate() {
     // Pagination
-    let limit = this.queryStr.limit * 1 || 3
+    let limit = this.queryStr.limit * 1 || 50
     // if the limit exists then fine otherwise the default results 
-    // per page are 3
+    // per page are 50 which are the max number of tasks a user can create
     let page = this.queryStr.page * 1 || 1;
     // default page is 1
     this.query = this.query.skip((page - 1) * limit).limit(limit);
