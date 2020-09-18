@@ -78,18 +78,20 @@ module.exports.removeKey = (req, res, next) => {
     if (err) {
       return console.log(err.message, '\n', 'Cache data might not be valid');
     }
-    client.del(vals, (err, response) => {
-      if (err) {
-        return console.log(err.message, '\n', 'Cache data might not be valid');
-      }
-      if (response) {
-        console.log('deleted keys');
-        next();
-      } else {
-        console.log('no key existed');
-        next();
-      }
-    });
+    if (!vals) {
+      client.del(vals, (err, response) => {
+        if (err) {
+          return console.log(err.message, '\n', 'Cache data might not be valid');
+        }
+        if (response) {
+          console.log('deleted keys');
+          next();
+        } else {
+          console.log('no key existed');
+          next();
+        }
+      });
+    }
   });
 }
 
