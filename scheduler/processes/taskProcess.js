@@ -9,7 +9,6 @@ module.exports = async function (job) {
   try {
     // using findByIdAndUpdate does not uses .save() so no validators or save hooks will be
     // called
-    console.log(job.opts.delay);
     const Task = require('./../../models/taskModel');
     await Task.findByIdAndUpdate(job.data.taskId, { status: 'OVERDUE' });
     // return resolved if everything is fine

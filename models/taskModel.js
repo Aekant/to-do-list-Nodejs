@@ -22,6 +22,8 @@ const taskSchema = new mongoose.Schema({
     // Using a custom validator to make sure the deadline is 1 min
     // greater than creation time at the time of creation
     // and should be 1 min long at the time of updating
+
+    // these validators run before the pre save hooks
     validate: {
       // this has access to the current document using this only when the document is being 
       // created
@@ -82,8 +84,38 @@ taskSchema.virtual('dueTime').get(function () {
 // this wont run if we are doing findByIdAndUpdate, althought the validators
 // can be run if we want by setting the option runValidators to true
 taskSchema.pre('save', function (next) {
-  if (!this.isModified(this.title)) return next();
+  if (!this.isModified('title')) return next();
   this.slug = slugify(this.title, { lower: true });
+  next();
+});
+
+// to check before document saving that if our document is not new and its status field
+// got modified which is either IN-PROGRESS or COMPLETED, so if doc is not new and status 
+// got modified to completed then run this
+taskSchema.pre('save', async function (next) {
+  if (this.isNew || !this.isModified('status') || this.status !== 'COMPLETED') {
+    return next();
+  }
+
+  let diff = this.deadline.getTime() - Date.now();
+  // if the status is changed to COMPLETED and it is overdue then mark it as LATE-COMPLETION
+  if (diff < 0) {
+    this.status = 'LATE-COMPLETION';
+  } else {
+    // Or else if it is completed on time then simply keep it COMPLETED and remove the job from queue
+    const job = await taskQueue.getJob(this.id);
+    if (job) {
+      job.remove();
+    }
+  }
+  this.completedAt = new Date();
+  next();
+});
+
+taskSchema.pre('save', function (next) {
+  // to be used in post hook because apparently if the document is new in pre hook it is not new in 
+  // post hook
+  this.wasNew = this.isNew;
   next();
 });
 
@@ -92,14 +124,18 @@ taskSchema.post('save', function (doc, next) {
   // now there is a trade off, we want to save the jobId on the doc, then we have to create a job in pre save hook
   // but that way we cant have access to taskId since it is not saved so a work around is to do it in post save 
   // hook so that we have taskId and what about jobId? Well we wont store a job Id on tasks. The job Id will just be the
-  // taskId 
-
+  // taskId
+  if (!doc.wasNew) {
+    return next();
+  }
   // this adds a job in the task queue everytime a task is created
   // well repeat option and custom job id together are not supported therefore using delay
   taskQueue.add({ taskId: doc.id }, { delay: doc.deadline.getTime() - doc.createdAt.getTime(), jobId: doc.id });
   console.log(doc.deadline.getTime() - doc.createdAt.getTime());
   next();
 });
+
+
 // finally creating a model 
 // this will create a collection in our database
 // with the plural name of the model for example
