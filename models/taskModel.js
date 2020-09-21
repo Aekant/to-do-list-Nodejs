@@ -73,7 +73,7 @@ taskSchema.virtual('dueTime').get(function () {
     return '------';
   } else if (diff > 0) {
     let date = new Date(diff);
-    return `${date.getUTCDate() - 1}:${date.getUTCHours()}:${date.getUTCMinutes()}`;
+    return `${date.getUTCDate() - 1} days:${date.getUTCHours()} Hours:${date.getUTCMinutes()} Minutes`;
   } else {
     return 'XXXXXX';
   }
@@ -119,6 +119,37 @@ taskSchema.pre('save', function (next) {
   next();
 });
 
+// if the deadline is changed we need to dequeue the previous scheduled job and queue a new one
+taskSchema.pre('save', async function (next) {
+  // before this pre hook it is validated that the deadline is not less than the current time.
+  // in the schema validators it is ensured that if the deadline is changed then it can be increased only
+  if (!this.isNew && this.isModified('deadline')) {
+    // obviously if we are in this pre hook this mean that the deadline is greater than current time
+    // it could happen that our status was set to OVERDUE so we need to set the status to IN-PROGRESS
+    // or if it was late completion then it would be completed
+    if (this.status === 'LATE-COMPLETION') {
+      this.status = 'COMPLETED';
+      // no need to reschedule job here
+      next();
+    } else if (this.status !== 'COMPLETED') {
+      // it could be NEW, IN-PROGRESS or OVERDUE, in either case the task needs to be rescheduled
+      const job = await taskQueue.getJob(this.id);
+      if (job) {
+        job.remove();
+      }
+      // creates a new job
+      taskQueue.add({ taskId: this.id }, { delay: this.deadline.getTime() - this.createdAt.getTime(), jobId: this.id });
+      console.log(this.deadline.getTime() - this.createdAt.getTime());
+      // now if status was OVERDUE then it should be IN-PROGRESS
+      if (this.status === 'OVERDUE') {
+        this.status = 'IN-PROGRESS';
+      }
+      next();
+    }
+  }
+  next();
+});
+
 // after document creation
 taskSchema.post('save', function (doc, next) {
   // now there is a trade off, we want to save the jobId on the doc, then we have to create a job in pre save hook
@@ -135,6 +166,13 @@ taskSchema.post('save', function (doc, next) {
   next();
 });
 
+taskSchema.post('findOneAndDelete', async function (doc) {
+  // if there is a job by that id find that and remove
+  const job = await taskQueue.getJob(doc.id);
+  if (job) {
+    job.remove();
+  }
+});
 
 // finally creating a model 
 // this will create a collection in our database

@@ -156,8 +156,11 @@ module.exports.updateById = async (req, res, next) => {
 // Delete routes handlers
 module.exports.deleteById = async (req, res, next) => {
   try {
-    let query = Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
-    const task = await query;
+
+    // in the documentation it says that this method triggers the findOneAndDelete middleware well I tried
+    // and it worked, now in the POST Hook we need to check if a task is scheduled for this document? If yes,
+    // then remove it from queue
+    const task = await Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     res.status(204).json({
       message: 'Success',
       data: null
