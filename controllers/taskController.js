@@ -93,26 +93,51 @@ module.exports.updateById = async (req, res, next) => {
     // it takes an id, the object to patch/update with
     // and a few config options such as running validators again
     // to ensure that user did not enter any invalid data
-    let query = Task.findOneAndUpdate({
-      _id: req.params.id, userId: req.user.id
-    }, req.body, {
-      // returns the updated document
-      new: true,
-      // checks for invalid data
-      // since  we are using the update method, here the validator wont
-      // have access to the document being update using this keyword
-      // In order to run a full fledge validation check (one in which we check
-      // other field values too) we should instead use findOne() by ID and then
-      // replace the fields manually and then do .save() method. This will 
-      // trigger the validator and will have access to the document using this
-      runValidators: true,
+    // let query = Task.findOneAndUpdate({
+    //   _id: req.params.id, userId: req.user.id
+    // }, req.body, {
+    //   // returns the updated document
+    //   new: true,
+    //   // checks for invalid data
+    //   // since  we are using the update method, here the validator wont
+    //   // have access to the document being update using this keyword
+    //   // In order to run a full fledge validation check (one in which we check
+    //   // other field values too) we should instead use findOne() by ID and then
+    //   // replace the fields manually and then do .save() method. This will 
+    //   // trigger the validator and will have access to the document using this
+    //   runValidators: true,
 
-      // setting this option will enable us to access the underlying query
-      // object when running update validators
-      // doesn't work
-      // context: 'query'
-    });
+    //   // setting this option will enable us to access the underlying query
+    //   // object when running update validators
+    //   // doesn't work
+    //   // context: 'query'
+    // });
+
+    // returns the document which we want to update
+    const query = Task.findOne({ _id: req.params.id, userId: req.user.id });
     const task = await query;
+
+    if (!task) {
+      return res.status(400).json({
+        message: 'Failed',
+        error: 'No such task exists'
+      });
+    }
+    // fields to be updated can be title, deadline, description, status
+    const fields = Object.keys(req.body);
+    fields.forEach(el => {
+      if (req.body[el]) {
+        task[el] = req.body[el];
+      }
+    });
+    // now one would add extra fields in the object to update with but before saving
+    // these all are going to be validated against the defined schema therefore, there 
+    // is no way an additional field that can be added here
+
+    // since we are using .save() here all the pre and post save hooks along with
+    // the validators defined in schema will be executed
+    await task.save({ validateModifiedOnly: true });
+
     res.status(200).json({
       message: 'Success',
       data: {
@@ -131,8 +156,11 @@ module.exports.updateById = async (req, res, next) => {
 // Delete routes handlers
 module.exports.deleteById = async (req, res, next) => {
   try {
-    let query = Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
-    const task = await query;
+
+    // in the documentation it says that this method triggers the findOneAndDelete middleware well I tried
+    // and it worked, now in the POST Hook we need to check if a task is scheduled for this document? If yes,
+    // then remove it from queue
+    const task = await Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     res.status(204).json({
       message: 'Success',
       data: null

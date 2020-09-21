@@ -194,7 +194,9 @@ module.exports.forgotPassword = async (req, res, next) => {
     // the user document has two new properties set so we need to save it
     await user.save({ validateBeforeSave: false });
     // we do this to because when saving a document the validators are gonna
-    // ask for all mandatory fields
+    // ask for all mandatory fields in which case they will run for password fields
+    // too, also we have access to this keyword in this case because create uses
+    // save behind the scenes.
 
     // defining the reset URL
     const resetURL = `${req.protocol}://${req.get('host')}/users/resetPassword/${token}`;
