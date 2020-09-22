@@ -33,6 +33,14 @@ router
   .get((req, res, next) => cache.cached(req, res, next), taskController.maxTaskCompletionDate);
 
 router
+  .route('/reports/tasksCreatedEveryDay')
+  .get((req, res, next) => cache.cached(req, res, next), taskController.tasksCreatedEveryDay);
+
+router
+  .route('/reports/averageTasksCompleted')
+  .get((req, res, next) => cache.cached(req, res, next), taskController.averageTasksCompleted);
+
+router
   .route('/:id')
   .get((req, res, next) => cache.cachedId(req, res, next), taskController.getById)
   .patch(taskController.updateById, cache.removeKey)

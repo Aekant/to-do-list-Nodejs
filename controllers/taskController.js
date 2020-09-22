@@ -269,7 +269,10 @@ module.exports.maxTaskCompletionDate = async (req, res) => {
   try {
     let aggr = Task.aggregate([
       {
-        $match: { $expr: { $and: [{ $in: ['$status', ['COMPLETED', 'LATE-COMPLETION']] }, { userId: req.user._id }] } }
+        $match: { userId: req.user._id }
+      },
+      {
+        $match: { $expr: { $in: ['$status', ['COMPLETED', 'LATE-COMPLETION']] } }
       },
       {
         $addFields: {
@@ -324,4 +327,96 @@ module.exports.maxTaskCompletionDate = async (req, res) => {
   }
 }
 
+module.exports.tasksCreatedEveryDay = async (req, res) => {
+  try {
+    let aggr = Task.aggregate([
+      {
+        $match: { userId: req.user._id }
+      },
+      {
+        $group: {
+          _id: null,
+          Sunday: { $sum: { $cond: [{ $eq: [{ $dayOfWeek: '$createdAt' }, 1] }, 1, 0] } },
+          Monday: { $sum: { $cond: [{ $eq: [{ $dayOfWeek: '$createdAt' }, 2] }, 1, 0] } },
+          Tuesday: { $sum: { $cond: [{ $eq: [{ $dayOfWeek: '$createdAt' }, 3] }, 1, 0] } },
+          Wednesday: { $sum: { $cond: [{ $eq: [{ $dayOfWeek: '$createdAt' }, 4] }, 1, 0] } },
+          Thursday: { $sum: { $cond: [{ $eq: [{ $dayOfWeek: '$createdAt' }, 5] }, 1, 0] } },
+          Friday: { $sum: { $cond: [{ $eq: [{ $dayOfWeek: '$createdAt' }, 6] }, 1, 0] } },
+          Saturday: { $sum: { $cond: [{ $eq: [{ $dayOfWeek: '$createdAt' }, 7] }, 1, 0] } }
+        }
+      },
+      {
+        $project: { _id: 0 }
+      }
+    ]);
 
+    const stats = await aggr;
+    // setting cache
+    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify(stats));
+    res.status(200).json({
+      message: 'Success',
+      data: {
+        stats
+      }
+    });
+  } catch (err) {
+    res.status(404).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+
+}
+
+module.exports.averageTasksCompleted = async (req, res) => {
+  try {
+    // finds out the time since the account was created in number of days
+    let timeSinceAccCreation = (new Date().getTime() - req.user.createdAt.getTime()) / (1 * 24 * 60 * 60 * 1000);
+    timeSinceAccCreation = Math.round(timeSinceAccCreation);
+    if (!timeSinceAccCreation) {
+      // if there are zero days since account creation just append 1 to it so that division by zero is handled
+      timeSinceAccCreation += 1;
+    }
+
+    let aggr = Task.aggregate([
+      {
+        $match: { userId: req.user._id }
+      },
+      {
+        $match: { $expr: { $in: ['$status', ['COMPLETED', 'LATE-COMPLETION']] } }
+      },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0
+        }
+      }
+    ]);
+
+    const stats = await aggr;
+
+    let average = 0;
+    if (stats[0].count) {
+      // if the count exists then 
+      average = stats[0].count / timeSinceAccCreation;
+    }
+    // setting cache
+    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify({ average }));
+    res.status(200).json({
+      message: 'Success',
+      data: {
+        average
+      }
+    });
+  } catch (err) {
+    res.status(404).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+}

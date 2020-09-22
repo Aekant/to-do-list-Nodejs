@@ -101,5 +101,5 @@ const key = (req) => {
   // /tasks?sort=deadline&limit=4
   // both of these will return exactly same results but since the 
   // keys are very different therefore two separate caches will be made
-  return `${req.user.id}${req.originalUrl}`;
+  return `${req.user._id}${req.originalUrl}`;
 }
