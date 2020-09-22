@@ -77,7 +77,7 @@ module.exports.removeKey = (req, res, next) => {
     if (err) {
       return console.log(err.message, '\n', 'Cache data might not be valid');
     }
-    if (!vals) {
+    if (vals) {
       client.del(vals, (err, response) => {
         if (err) {
           return console.log(err.message, '\n', 'Cache data might not be valid');

@@ -15,7 +15,6 @@ const taskSchema = new mongoose.Schema({
     enum: ['NEW', 'IN-PROGRESS', 'COMPLETED', 'LATE-COMPLETION', 'OVERDUE'],
     default: 'NEW'
   },
-  recentViewActivity: [Date],
   deadline: {
     type: Date,
     required: [true, 'A deadline for the task must be specified'],

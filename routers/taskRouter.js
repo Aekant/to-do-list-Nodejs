@@ -1,5 +1,6 @@
 const express = require('express');
 const taskController = require('../controllers/taskController');
+const taskQueue = require('../scheduler/queues/taskQueue');
 const authController = require('./../controllers/authController');
 const router = express.Router();
 const cache = require('./../utils/cache');
@@ -26,6 +27,10 @@ router
 router
   .route('/reports/lateCompletion')
   .get((req, res, next) => cache.cached(req, res, next), taskController.lateCompleted);
+
+router
+  .route('/reports/maxTaskCompletionDate')
+  .get((req, res, next) => cache.cached(req, res, next), taskController.maxTaskCompletionDate);
 
 router
   .route('/:id')
