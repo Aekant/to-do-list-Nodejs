@@ -264,3 +264,64 @@ module.exports.lateCompleted = async (req, res) => {
     });
   }
 }
+
+module.exports.maxTaskCompletionDate = async (req, res) => {
+  try {
+    let aggr = Task.aggregate([
+      {
+        $match: { $expr: { $and: [{ $in: ['$status', ['COMPLETED', 'LATE-COMPLETION']] }, { userId: req.user._id }] } }
+      },
+      {
+        $addFields: {
+          completedAt: {
+            $dateToString: {
+              format: "%Y-%m-%d", date: '$completedAt'
+            }
+          },
+        }
+      },
+      {
+        $group: {
+          _id: '$completedAt',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: '$count',
+          date: { $push: '$_id' }
+        }
+      },
+      {
+        $addFields: { maxCount: '$_id' }
+      },
+      {
+        $project: { _id: 0 }
+      },
+      {
+        $sort: { maxCount: -1 }
+      },
+      {
+        $limit: 1
+      }
+    ]);
+
+    const stats = await aggr;
+
+    // setting cache
+    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify(stats));
+    res.status(200).json({
+      message: 'Success',
+      data: {
+        stats
+      }
+    });
+  } catch (err) {
+    res.status(404).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+}
+
+
