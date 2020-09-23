@@ -54,7 +54,8 @@ const taskSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'User',
     required: true
-  }
+  },
+  attachment: String
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true },

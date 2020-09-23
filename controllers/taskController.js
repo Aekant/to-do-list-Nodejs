@@ -123,21 +123,28 @@ module.exports.updateById = async (req, res, next) => {
         error: 'No such task exists'
       });
     }
-    // fields to be updated can be title, deadline, description, status
-    const fields = Object.keys(req.body);
-    fields.forEach(el => {
-      if (req.body[el]) {
-        task[el] = req.body[el];
-      }
-    });
-    // now one would add extra fields in the object to update with but before saving
-    // these all are going to be validated against the defined schema therefore, there 
-    // is no way an additional field that can be added here
+
+    // if the file property does not exists on the req object it means its a normal
+    // update req but if it does exists then only thing we want to update on this route
+    // is the attachment field, no other field should be updated on this route
+    if (!req.file) {
+      // fields to be updated can be title, deadline, description, status
+      const fields = Object.keys(req.body);
+      fields.forEach(el => {
+        if (req.body[el]) {
+          task[el] = req.body[el];
+        }
+      });
+      // now one would add extra fields in the object to update with but before saving
+      // these all are going to be validated against the defined schema therefore, there 
+      // is no way an additional field that can be added here
+    } else {
+      task.attachment = req.file.filename;
+    }
 
     // since we are using .save() here all the pre and post save hooks along with
     // the validators defined in schema will be executed
     await task.save({ validateModifiedOnly: true });
-
     res.status(200).json({
       message: 'Success',
       data: {

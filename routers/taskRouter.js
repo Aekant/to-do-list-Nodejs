@@ -1,9 +1,9 @@
 const express = require('express');
 const taskController = require('../controllers/taskController');
-const taskQueue = require('../scheduler/queues/taskQueue');
 const authController = require('./../controllers/authController');
 const router = express.Router();
 const cache = require('./../utils/cache');
+const upload = require('./../utils/multer');
 
 // middleware for this route
 router.use(authController.gaurd);
@@ -45,5 +45,11 @@ router
   .get((req, res, next) => cache.cachedId(req, res, next), taskController.getById)
   .patch(taskController.updateById, cache.removeKey)
   .delete(taskController.deleteById, cache.removeKey);
+
+// user is authenticated then this route is accessed
+// the id is accessible to req.params.id
+router
+  .route('/:id/uploadAttachment')
+  .patch(upload, taskController.updateById);
 
 module.exports = router;
