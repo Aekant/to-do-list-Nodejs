@@ -477,9 +477,9 @@ module.exports.averageTasksCompleted = async (req, res) => {
     const stats = await aggr;
 
     let average = 0;
-    if (stats[0].count) {
-      // if the count exists then 
-      average = stats[0].count / timeSinceAccCreation;
+    if (stats.length > 0) {
+      // if the count exists then
+      if (stats[0].count) average = stats[0].count / timeSinceAccCreation;
     }
     // setting cache
     cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify({ average }));

@@ -10,7 +10,7 @@ const hpp = require('hpp');
 const passport = require('passport');
 const morgan = require('morgan');
 const winston = require('./utils/logger');
-const { stream } = require('./utils/logger');
+const cookieParser = require('cookie-parser');
 require('./strategies/googleAuth')(passport);
 
 
@@ -29,11 +29,12 @@ app.use('/', limiter);
 // data to be parsed onto a body object therefore we are specifying the
 // middleware here to  avoid code repetition
 app.use(express.json());
+
 app.use(mongoSanitize());
 app.use(xss());
 app.use(hpp());
 app.use(morgan('combined', { stream: winston.stream }))
-
+app.use(cookieParser());
 
 app.use('/tasks', taskRouter);
 app.use('/users', userRouter);

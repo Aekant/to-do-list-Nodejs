@@ -31,7 +31,7 @@ const sendTokenResponse = (res, statusCode, user) => {
   res.cookie('jwt', access_token, cookieOptions);
   // we have enabled select to false but at the time of creation that does not
   // apply, this undefined does not make the password in the database undefined but
-  // only in response in postmanor whatever
+  // only in response in postman or whatever
   user.password = undefined;
   res.status(statusCode).json({
     message: 'Success',
