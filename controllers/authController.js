@@ -94,9 +94,8 @@ module.exports.login = async (req, res, next) => {
     // now this password field can be null too because let say a google
     // authenticated user tries to login using a random  password, but in the
     // database its null so we have to check it right here
-
     // we might not find the user or the password might be wrong then
-    if (!user || !user.password || await user.correctPassword(password, user.password)) {
+    if (!user || !user.password || !await user.correctPassword(password, user.password)) {
       return res.status(401).json({
         message: 'Authentication failed: Incorrect username or password'
       });

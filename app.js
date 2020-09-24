@@ -8,6 +8,9 @@ const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
 const passport = require('passport');
+const morgan = require('morgan');
+const winston = require('./utils/logger');
+const { stream } = require('./utils/logger');
 require('./strategies/googleAuth')(passport);
 
 
@@ -29,9 +32,12 @@ app.use(express.json());
 app.use(mongoSanitize());
 app.use(xss());
 app.use(hpp());
+app.use(morgan('combined', { stream: winston.stream }))
+
 
 app.use('/tasks', taskRouter);
 app.use('/users', userRouter);
+
 
 // exporting the app
 module.exports = app;
