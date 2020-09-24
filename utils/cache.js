@@ -75,22 +75,25 @@ module.exports.removeKey = (req, res, next) => {
     // if any error occurs in deleting cache then since the user updated, deleted or created new data
     // the cache data won't be valid for sometime therefore notify the user about that
     if (err) {
-      return console.log(err.message, '\n', 'Cache data might not be valid');
+      return console.log(err.message, '\n', 'Error in finding keys');
     }
-    if (vals) {
+    // if no keys are found it returns an empty array instead of null or undefined
+    // therefore this check fails and client.del get an empty array for an array of
+    // keys which throws an invalid argument error
+    if (vals.length > 0) {
       client.del(vals, (err, response) => {
         if (err) {
-          return console.log(err.message, '\n', 'Cache data might not be valid');
+          console.log(vals);
+          return console.log(err.message, '\n', 'Error in deleting keys');
         }
         if (response) {
           console.log('deleted keys');
           next();
-        } else {
-          console.log('no key existed');
-          next();
         }
       });
     }
+    console.log('no key existed');
+    next();
   });
 }
 

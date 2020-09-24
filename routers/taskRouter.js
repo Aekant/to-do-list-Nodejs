@@ -50,6 +50,10 @@ router
 // the id is accessible to req.params.id
 router
   .route('/:id/uploadAttachment')
-  .patch(upload, taskController.updateById);
+  .patch(upload, taskController.updateById, cache.removeKey);
+
+router
+  .route('/:id/downloadAttachment')
+  .get(taskController.downloadAttachment);
 
 module.exports = router;

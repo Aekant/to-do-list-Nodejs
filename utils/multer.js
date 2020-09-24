@@ -14,8 +14,7 @@ const storage = multer.diskStorage({
 
     // MIME type is as application/json or text/html or text/csv etc
 
-    // since the route will be tasks/id/uploadAttachment there we do have the task id here
-    cb(null, `${req.user.id}-${req.params.id}-${file.fieldname}${path.extname(file.originalname)}`);
+    cb(null, `${req.user.id}-${file.fieldname}-${new Date().getTime()}${path.extname(file.originalname)}`);
   }
 });
 
