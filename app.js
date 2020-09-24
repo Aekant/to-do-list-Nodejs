@@ -19,7 +19,9 @@ const limiter = rateLimit({
 
 app.use(helmet());
 
+// using the limiter middleware on every route
 app.use('/', limiter);
+
 // since both of the routes that is users and tasks will require the 
 // data to be parsed onto a body object therefore we are specifying the
 // middleware here to  avoid code repetition

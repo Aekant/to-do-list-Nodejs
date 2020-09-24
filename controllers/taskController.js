@@ -2,6 +2,9 @@
 const Task = require('./../models/taskModel');
 const APIFeatures = require('./../utils/apiFeatures');
 const cache = require('./../utils/cache');
+const fs = require('fs');
+const { promisify } = require('util')
+const unlink = promisify(fs.unlink);
 
 // GET routes handlers
 module.exports.getAll = async (req, res) => {
@@ -46,14 +49,60 @@ module.exports.getById = async (req, res) => {
     // db.collection.findOne({id: req.params.id})
     // this make sures that a logged in user cannot access the task
     // he/she never created
-    let query = Task.find({ _id: req.params.id, userId: req.user.id });
+    let query = Task.findOne({ _id: req.params.id, userId: req.user.id });
     const task = await query;
+
+    // above the find method used in findOne which expects to return a single object
+    // but let say we used find() method, the find method returns an empty array not an
+    // object, the empty array wont be treated as false so be careful when keeping the empty
+    // object checks
+    if (!task) {
+      return res.status(400).json({
+        message: 'Failed',
+        error: 'No such task exists'
+      });
+    }
+
+
     res.status(200).json({
       message: 'Success',
       data: {
         task
       }
     });
+  } catch (err) {
+    res.status(404).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+}
+
+module.exports.downloadAttachment = async (req, res, next) => {
+  try {
+    // find the task whose attachment user wants to download
+    let query = Task.findOne({ _id: req.params.id, userId: req.user.id });
+    const task = await query;
+
+    // if task doesn't exist ...s return 
+    if (!task) {
+      return res.status(400).json({
+        message: 'Failed',
+        error: 'No such task exists'
+      });
+    }
+
+    // if exists then check if attachment exists?
+    if (!task.attachment) {
+      return res.status(400).json({
+        message: 'Failed',
+        error: 'No attachement exists'
+      });
+    }
+
+    // if we reach this point it means everything was fine
+    res.download(`./public/uploads/${task.attachment}`);
+
   } catch (err) {
     res.status(404).json({
       message: 'Failed',
@@ -118,26 +167,48 @@ module.exports.updateById = async (req, res, next) => {
     const task = await query;
 
     if (!task) {
+      // check if file property exists on request object that means the file was uploaded
+      // and no task was found
+      if (req.file) {
+        // if no task was found but file still uploaded well we want to delete it
+        await unlink(`./public/uploads/${req.file.filename}`);
+      }
+      // use fs.unlink to delete file and filename would be req.file.filename
       return res.status(400).json({
         message: 'Failed',
         error: 'No such task exists'
       });
     }
-    // fields to be updated can be title, deadline, description, status
-    const fields = Object.keys(req.body);
-    fields.forEach(el => {
-      if (req.body[el]) {
-        task[el] = req.body[el];
+
+    // if the file property does not exists on the req object it means its a normal
+    // update req but if it does exists then only thing we want to update on this route
+    // is the attachment field, no other field should be updated on this route
+    if (!req.file) {
+      // fields to be updated can be title, deadline, description, status
+      const fields = Object.keys(req.body);
+      fields.forEach(el => {
+        if (req.body[el]) {
+          task[el] = req.body[el];
+        }
+      });
+      // now one would add extra fields in the object to update with but before saving
+      // these all are going to be validated against the defined schema therefore, there 
+      // is no way an additional field that can be added here
+    } else {
+      // fs.unlink delete task.attachment
+      // task.attachment = req.file.filename
+
+      // checking if there is already an attachement 
+      if (task.attachment) {
+        // delete that attachment
+        await unlink(`./public/uploads/${task.attachment}`);
       }
-    });
-    // now one would add extra fields in the object to update with but before saving
-    // these all are going to be validated against the defined schema therefore, there 
-    // is no way an additional field that can be added here
+      task.attachment = req.file.filename;
+    }
 
     // since we are using .save() here all the pre and post save hooks along with
     // the validators defined in schema will be executed
     await task.save({ validateModifiedOnly: true });
-
     res.status(200).json({
       message: 'Success',
       data: {
@@ -161,6 +232,11 @@ module.exports.deleteById = async (req, res, next) => {
     // and it worked, now in the POST Hook we need to check if a task is scheduled for this document? If yes,
     // then remove it from queue
     const task = await Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+    // delete any attachment which was bind to a task
+    if (task.attachment) {
+      // delete that attachment
+      await unlink(`./public/uploads/${task.attachment}`);
+    }
     res.status(204).json({
       message: 'Success',
       data: null
