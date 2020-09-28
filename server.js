@@ -11,7 +11,7 @@ const notifyQueue = require('./scheduler/queues/notifyQueue');
 notifyQueue.add({}, { repeat: { cron: '0 0 * * *' } });
 
 // setting up the Database connection
-const DB = process.env.LOCAL_STRING.replace('<DATABASE>', process.env.DATABASE);
+const DB = process.env.DATABASE_STRING.replace('<DATABASE>', process.env.DATABASE);
 
 mongoose.connect(DB, {
   useNewUrlParser: true,

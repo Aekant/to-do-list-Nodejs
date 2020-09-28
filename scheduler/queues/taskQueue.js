@@ -1,4 +1,5 @@
 const Queue = require('Bull');
+const logger = require('./../../utils/logger');
 
 // creates a queue for jobs to be executed on task documents
 const taskQueue = new Queue('task-queue', {
@@ -16,12 +17,12 @@ taskQueue.process(require('./../processes/taskProcess'));
 // adding two event listeners
 taskQueue.on('completed', job => {
   // remove whatever job which got completed from the task-queue
-  console.log('Status for task with Id', job.data.taskId, 'set to OVERDUE');
+  logger.info(`Status for task with id ${job.data.taskId} set to OVERDUE`);
   job.remove();
 });
 
 taskQueue.on('failed', function (job, err) {
-  console.log(err.message);
+  logger.error(err.message);
   job.remove();
 });
 

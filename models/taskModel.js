@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const taskQueue = require('./../scheduler/queues/taskQueue');
+const logger = require('./../utils/logger');
 
 // defining the schema for documents in our task collection
 // 1st argument is for the document schema
@@ -162,7 +163,7 @@ taskSchema.post('save', function (doc, next) {
   // this adds a job in the task queue everytime a task is created
   // well repeat option and custom job id together are not supported therefore using delay
   taskQueue.add({ taskId: doc.id }, { delay: doc.deadline.getTime() - doc.createdAt.getTime(), jobId: doc.id });
-  console.log(doc.deadline.getTime() - doc.createdAt.getTime());
+  logger.debug(`Task scheduled after delay: ${doc.deadline.getTime() - doc.createdAt.getTime()} ms`);
   next();
 });
 

@@ -1,4 +1,5 @@
 const redis = require('redis');
+const logger = require('./logger');
 
 // setting up redis connection
 const client = redis.createClient(6379);
@@ -75,7 +76,8 @@ module.exports.removeKey = (req, res, next) => {
     // if any error occurs in deleting cache then since the user updated, deleted or created new data
     // the cache data won't be valid for sometime therefore notify the user about that
     if (err) {
-      return console.log(err.message, '\n', 'Error in finding keys');
+      logger.error(`Error in finding keys \n${err.message}`);
+      return
     }
     // if no keys are found it returns an empty array instead of null or undefined
     // therefore this check fails and client.del get an empty array for an array of
@@ -83,16 +85,15 @@ module.exports.removeKey = (req, res, next) => {
     if (vals.length > 0) {
       client.del(vals, (err, response) => {
         if (err) {
-          console.log(vals);
-          return console.log(err.message, '\n', 'Error in deleting keys');
+          return logger.error(`Error in deleting keys \n${err.message}`);
         }
         if (response) {
-          console.log('deleted keys');
+          logger.info('deleted cached keys');
           next();
         }
       });
     }
-    console.log('no key existed');
+    logger.debug('no keys existed to delete');
     next();
   });
 }

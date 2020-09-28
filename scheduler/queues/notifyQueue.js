@@ -1,4 +1,5 @@
 const Queue = require('bull');
+const logger = require('../../utils/logger');
 
 // creates a new queue
 const notifyQueue = new Queue('notify-queue', {
@@ -11,12 +12,12 @@ const notifyQueue = new Queue('notify-queue', {
 notifyQueue.process(require('./../processes/notifyProcess'));
 
 notifyQueue.on('completed', job => {
-  console.log('Job Completed!');
+  logger.info('Notifying Email sent to users!!');
   job.remove();
 });
 
 notifyQueue.on('failed', function (job, err) {
-  console.log(err.message);
+  logger.error(err.message);
   job.remove();
 });
 
