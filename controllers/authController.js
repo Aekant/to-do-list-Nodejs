@@ -200,7 +200,7 @@ module.exports.forgotPassword = async (req, res, next) => {
     // defining the reset URL
     const resetURL = `${req.protocol}://${req.get('host')}/users/resetPassword/${token}`;
 
-    const message = `Forgot your Password? Please submit a PATCH request to the following URL. ${resetURL}.`;
+    const message = `Forgot your Password? Please submit a PATCH request to the following URL. \n ${resetURL}.`;
 
     // Why are we creating a nested try catch block 
     // because in case the error occurs here we want to handle the
