@@ -25,6 +25,9 @@ router.
   post('/forgotPassword', authController.forgotPassword);
 
 router.
+  get('/verifyAccount/:token', authController.verifyAccount);
+
+router.
   patch('/resetPassword/:token', authController.resetPassword);
 
 router.
