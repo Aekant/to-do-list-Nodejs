@@ -5,6 +5,7 @@ const cache = require('./../utils/cache');
 const fs = require('fs');
 const { promisify } = require('util')
 const unlink = promisify(fs.unlink);
+const similarStrings = require('./../algortihms/jaccardIndex');
 
 // GET routes handlers
 module.exports.getAll = async (req, res) => {
@@ -499,15 +500,30 @@ module.exports.averageTasksCompleted = async (req, res) => {
 
 module.exports.getSimilarTasks = async (req, res) => {
   try {
-    const similarTasks = "Dummy";
+    // in order to calculate the virtual property dueTime we always need to select deadline
+    // I can do it in the find query middleware but won't do it
+    // find all tasks
+    const Tasks = await Task.find({ userId: req.user.id });
+    const TasksSlugs = Tasks.map(el => el.slug);
+    // use the algorithm to find the name of the similar tasks and their index
     // setting cache
-    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify({ similarTasks }));
+    const similarTasks = similarStrings(TasksSlugs);
+
+    let data = {};
+    if (similarTasks.similarityIndex > 0) {
+      data = {
+        similarityIndex: similarTasks.similarityIndex,
+        task1: Tasks[similarTasks.task1],
+        task2: Tasks[similarTasks.task2]
+      };
+    } else {
+      data = { message: 'No similar tasks were found' };
+    }
+    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify({ data }));
 
     res.status(200).json({
       message: 'Success',
-      data: {
-        similarTasks
-      }
+      data
     });
   } catch (err) {
     res.status(404).json({
