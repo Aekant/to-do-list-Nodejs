@@ -140,7 +140,7 @@ taskSchema.pre('save', async function (next) {
       }
       // creates a new job
       taskQueue.add({ taskId: this.id }, { delay: this.deadline.getTime() - this.createdAt.getTime(), jobId: this.id });
-      console.log(this.deadline.getTime() - this.createdAt.getTime());
+      logger.debug(`Task scheduled after delay: ${this.deadline.getTime() - this.createdAt.getTime()} ms`);
       // now if status was OVERDUE then it should be IN-PROGRESS
       if (this.status === 'OVERDUE') {
         this.status = 'IN-PROGRESS';

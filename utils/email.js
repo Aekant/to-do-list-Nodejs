@@ -16,8 +16,8 @@ const sendEmail = async (options) => {
     transporter = nodemailer.createTransport({
       service: 'SendGrid',
       auth: {
-        user: 'apikey',
-        pass: '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'
+        user: process.env.SENDGRID_USER,
+        pass: process.env.SENDGRID_PASSWORD
       }
     });
   }

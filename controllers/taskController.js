@@ -496,3 +496,23 @@ module.exports.averageTasksCompleted = async (req, res) => {
     });
   }
 }
+
+module.exports.getSimilarTasks = async (req, res) => {
+  try {
+    const similarTasks = "Dummy";
+    // setting cache
+    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify({ similarTasks }));
+
+    res.status(200).json({
+      message: 'Success',
+      data: {
+        similarTasks
+      }
+    });
+  } catch (err) {
+    res.status(404).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+}

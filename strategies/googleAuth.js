@@ -21,7 +21,8 @@ module.exports = (passport) => {
         provider: profile.provider,
         googleId: profile._json.sub,
         username: profile._json.name,
-        email: profile._json.email
+        email: profile._json.email,
+        verified: true
       });
 
       // everthing is fine then send out a jwt to the user
