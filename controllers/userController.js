@@ -3,7 +3,7 @@ const User = require('./../models/userModel');
 module.exports.delete = async (req, res, next) => {
   // since this is a protected route the req object has a user property
   try {
-    const user = await User.findByIdAndUpdate(req.user._id, { active: false });
+    await User.findByIdAndUpdate(req.user._id, { active: false });
     res.status(204).json({
       message: 'Success',
       data: null

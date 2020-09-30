@@ -1,8 +1,8 @@
 // Importing the Task Model to create a task
-const Task = require('./../models/taskModel');
+const fs = require('fs');
+const Task = require('../models/taskModel');
 const APIFeatures = require('./../utils/apiFeatures');
 const cache = require('./../utils/cache');
-const fs = require('fs');
 const { promisify } = require('util')
 const unlink = promisify(fs.unlink);
 
@@ -217,7 +217,7 @@ module.exports.updateById = async (req, res, next) => {
     });
     next();
   } catch (err) {
-    res.status(400).json({
+    res.status(404).json({
       message: 'Failed',
       error: err.message
     });
@@ -354,7 +354,7 @@ module.exports.maxTaskCompletionDate = async (req, res) => {
         $addFields: {
           completedAt: {
             $dateToString: {
-              format: "%Y-%m-%d", date: '$completedAt'
+              format: '%Y-%m-%d', date: '$completedAt'
             }
           },
         }
@@ -499,7 +499,7 @@ module.exports.averageTasksCompleted = async (req, res) => {
 
 module.exports.getSimilarTasks = async (req, res) => {
   try {
-    const similarTasks = "Dummy";
+    const similarTasks = 'Dummy';
     // setting cache
     cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify({ similarTasks }));
 

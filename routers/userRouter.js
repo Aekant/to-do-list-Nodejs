@@ -2,7 +2,7 @@ const authController = require('./../controllers/authController');
 const userController = require('./../controllers/userController');
 const express = require('express');
 const passport = require('passport');
-const { nextTick } = require('async');
+
 
 const router = express.Router();
 

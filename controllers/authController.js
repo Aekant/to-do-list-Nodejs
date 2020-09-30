@@ -10,10 +10,10 @@ const signToken = (payload) => {
     username: payload.username,
     userId: payload._id
   },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRES
-    });
+  process.env.JWT_SECRET,
+  {
+    expiresIn: process.env.JWT_EXPIRES
+  });
 }
 
 // sign token and send with response
@@ -86,7 +86,7 @@ module.exports.signUp = async (req, res) => {
 
       res.status(200).json({
         status: 'Success',
-        message: "Verification email sent, please verify to continue logging in"
+        message: 'Verification email sent, please verify to continue logging in'
       });
     } catch (err) {
       user.accountVerificationToken = undefined;
@@ -127,7 +127,7 @@ module.exports.verifyAccount = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     res.status(200).json({
-      message: "Account verified, to continue please login through the registered username and password"
+      message: 'Account verified, to continue please login through the registered username and password'
     });
   } catch (err) {
     res.status(400).json({
@@ -279,7 +279,7 @@ module.exports.forgotPassword = async (req, res, next) => {
 
       res.status(200).json({
         status: 'Success',
-        message: "Token sent to user's email"
+        message: 'Token sent to user\'s email'
       });
     } catch (err) {
       user.passwordResetToken = undefined;

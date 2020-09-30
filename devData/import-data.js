@@ -33,7 +33,7 @@ mongoose.connect(DB, {
 // Function to upload the data
 const loadData = async () => {
   try {
-    let task = await Task.create(data);
+    await Task.create(data);
     console.log('Data Loaded Successfully');
   } catch (err) {
     console.log(err.message);
