@@ -1,30 +1,5 @@
-module.exports = function similarStrings(tasks) {
-  const mostSimilar = {
-    similarityIndex: 0,
-    task1: 0,
-    task2: 0
-  }
-
-  for (var i = 0; i < tasks.length - 1; i++) {
-    for (var j = i + 1; j < tasks.length; j++) {
-
-      let similarityIndex = gestaltSimilarity(tasks[i], tasks[j]);
-
-      if (similarityIndex > mostSimilar.similarityIndex) {
-        mostSimilar.similarityIndex = similarityIndex;
-        mostSimilar.task1 = i;
-        mostSimilar.task2 = j;
-      }
-    }
-  }
-
-  return mostSimilar;
-}
-
-
-
 // this algorithm is not commutative
-function gestaltSimilarity(stringA, stringB) {
+module.exports = function gestaltSimilarity(stringA, stringB) {
   // stores the given two tasks
   let stack = [stringA, stringB];
   let score = 0;
@@ -87,5 +62,3 @@ function gestaltSimilarity(stringA, stringB) {
 
   return score / (stringA.length + stringB.length);
 }
-
-

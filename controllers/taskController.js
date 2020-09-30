@@ -5,7 +5,7 @@ const cache = require('./../utils/cache');
 const fs = require('fs');
 const { promisify } = require('util')
 const unlink = promisify(fs.unlink);
-const similarStrings = require('./../algorithms/gestalt');
+const similarStrings = require('../algorithms/similarStrings');
 
 // GET routes handlers
 module.exports.getAll = async (req, res) => {
@@ -502,7 +502,7 @@ module.exports.getSimilarTasks = async (req, res) => {
   try {
     const Tasks = await Task.find({ userId: req.user.id });
     const TasksSlugs = Tasks.map(el => el.slug);
-    const similarTasks = similarStrings(TasksSlugs);
+    const similarTasks = await similarStrings(TasksSlugs);
 
     let data = {};
     if (similarTasks.similarityIndex > 0) {
