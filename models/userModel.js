@@ -42,6 +42,7 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetTokenExpires: Date,
+  accountVerificationToken: String,
   provider: {
     type: String,
     enum: ['local', 'google'],
@@ -54,6 +55,11 @@ const userSchema = new mongoose.Schema({
   active: {
     type: Boolean,
     default: true,
+    select: false
+  },
+  verified: {
+    type: Boolean,
+    default: false,
     select: false
   }
 }, {
@@ -87,6 +93,9 @@ userSchema.pre('save', async function (next) {
 });
 
 // defining a query middleware to filter out all the deactivated accounts
+// and we cannot add a query here which checks all non verified accounts becasue when actually accessing the verifying 
+// route we are actually finding tasks which are not verified, therefore the query where we sort out all the non 
+// verified account is best suited for login route and forgot password route
 userSchema.pre(/^find/, function (next) {
   this.find({ active: { $ne: false } });
   next();

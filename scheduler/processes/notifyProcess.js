@@ -15,7 +15,7 @@ module.exports = async function (job) {
     // is to extract the necessary information
     const pendingTasks = await Task.aggregate([
       {
-        $match: { $expr: { $and: [{ $eq: [{ $dayOfYear: "$deadline" }, { $dayOfYear: new Date() }] }, { $in: ['$status', ['NEW', 'IN-PROGRESS']] }] } }
+        $match: { $expr: { $and: [{ $eq: [{ $dayOfYear: '$deadline' }, { $dayOfYear: new Date() }] }, { $in: ['$status', ['NEW', 'IN-PROGRESS']] }] } }
       },
       // all tasks whose deadline is due today are extracted provided they are not OVERDUE, COMPLETED OR LATE-COMPLETED
       {
@@ -69,7 +69,7 @@ module.exports = async function (job) {
 
         // formatting the email
         let message = `You have the following tasks pending \n`;
-        task.tasks.forEach((el, i) => message += (i + 1) + ') ' + el.title + `${el.description ? el.description + ': ' : ""}` + '\n');
+        task.tasks.forEach((el, i) => message += (i + 1) + ') ' + el.title + `${el.description ? el.description + ': ' : ''}` + '\n');
 
         await sendEmail({
           email: task.email,

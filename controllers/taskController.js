@@ -1,10 +1,11 @@
 // Importing the Task Model to create a task
-const Task = require('./../models/taskModel');
+const fs = require('fs');
+const Task = require('../models/taskModel');
 const APIFeatures = require('./../utils/apiFeatures');
 const cache = require('./../utils/cache');
-const fs = require('fs');
 const { promisify } = require('util')
 const unlink = promisify(fs.unlink);
+const similarStrings = require('../algorithms/similarStrings');
 
 // GET routes handlers
 module.exports.getAll = async (req, res) => {
@@ -217,7 +218,7 @@ module.exports.updateById = async (req, res, next) => {
     });
     next();
   } catch (err) {
-    res.status(400).json({
+    res.status(404).json({
       message: 'Failed',
       error: err.message
     });
@@ -354,7 +355,7 @@ module.exports.maxTaskCompletionDate = async (req, res) => {
         $addFields: {
           completedAt: {
             $dateToString: {
-              format: "%Y-%m-%d", date: '$completedAt'
+              format: '%Y-%m-%d', date: '$completedAt'
             }
           },
         }
@@ -488,6 +489,38 @@ module.exports.averageTasksCompleted = async (req, res) => {
       data: {
         average
       }
+    });
+  } catch (err) {
+    res.status(404).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+}
+
+module.exports.getSimilarTasks = async (req, res) => {
+  try {
+    const Tasks = await Task.find({ userId: req.user.id });
+    const TasksSlugs = Tasks.map(el => el.slug);
+    const similarTasks = await similarStrings(TasksSlugs);
+
+    let data = {};
+    if (similarTasks.similarityIndex > 0) {
+      data = {
+        similarityIndex: similarTasks.similarityIndex,
+        task1: Tasks[similarTasks.task1],
+        task2: Tasks[similarTasks.task2]
+      }
+    } else {
+      data = { message: 'No similar tasks were found' };
+    }
+
+    // setting cache
+    cache.setCache(req, process.env.CACHE_EXPIRE, JSON.stringify({ data }));
+
+    res.status(200).json({
+      message: 'Success',
+      data
     });
   } catch (err) {
     res.status(404).json({

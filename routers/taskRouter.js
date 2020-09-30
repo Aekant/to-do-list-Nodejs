@@ -40,11 +40,21 @@ router
   .route('/reports/averageTasksCompleted')
   .get((req, res, next) => cache.cached(req, res, next), taskController.averageTasksCompleted);
 
+
+
+router
+  .route('/similarTasks')
+  .get((req, res, next) => cache.cached(req, res, next), taskController.getSimilarTasks)
+
+
+
 router
   .route('/:id')
   .get((req, res, next) => cache.cachedId(req, res, next), taskController.getById)
   .patch(taskController.updateById, cache.removeKey)
   .delete(taskController.deleteById, cache.removeKey);
+
+
 
 // user is authenticated then this route is accessed
 // the id is accessible to req.params.id

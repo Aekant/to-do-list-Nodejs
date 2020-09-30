@@ -10,10 +10,10 @@ const signToken = (payload) => {
     username: payload.username,
     userId: payload._id
   },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRES
-    });
+  process.env.JWT_SECRET,
+  {
+    expiresIn: process.env.JWT_EXPIRES
+  });
 }
 
 // sign token and send with response
@@ -50,28 +50,92 @@ module.exports.sendTokenResponse = sendTokenResponse;
 // for signUp route
 module.exports.signUp = async (req, res) => {
   try {
+
+    // creating a verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const hashed = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
     // here we are creating a new user
     const user = await User.create({
       username: req.body.username,
       password: req.body.password,
       passwordConfirm: req.body.passwordConfirm,
       email: req.body.email,
-      photo: req.body.photo
+      accountVerificationToken: hashed
     });
 
     // since when a user is created the user is automatically logged in
     // therefore we can issue a token to the user
     // another scenario will be when a previously registered user will log in
 
+    // defining the reset URL
+    const verifyURL = `${req.protocol}://${req.get('host')}/users/verifyAccount/${verificationToken}`;
 
-    // adding one more field "access_token" to the response object
-    sendTokenResponse(res, 201, user);
+    const message = `Please submit a GET request to the following URL to activate your account. \n ${verifyURL}.`;
+
+    // Why are we creating a nested try catch block 
+    // because in case the error occurs here we want to handle the
+    // error response differently
+    // we have to reset the two fileds in user document
+    try {
+      await sendEmail({
+        email: user.email,
+        message,
+        subject: 'Verify Your to-do-list Account'
+      });
+
+      res.status(200).json({
+        status: 'Success',
+        message: 'Verification email sent, please verify to continue logging in'
+      });
+    } catch (err) {
+      user.accountVerificationToken = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(500).json({
+        status: 'Failed',
+        message: 'There was an error in sending email. Try again later',
+        err
+      });
+    }
   } catch (err) {
     res.status(400).json({
       message: 'Failed',
       error: err.message
     });
   }
+}
+
+// account verification
+module.exports.verifyAccount = async (req, res) => {
+  try {
+    const hash = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await User.findOne({
+      accountVerificationToken: hash,
+      verified: false
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: 'Bad Request'
+      });
+    }
+
+    user.accountVerificationToken = undefined;
+    user.verified = true;
+
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      message: 'Account verified, to continue please login through the registered username and password'
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: 'Failed',
+      error: err.message
+    });
+  }
+
 }
 
 // for signIn route
@@ -90,7 +154,7 @@ module.exports.login = async (req, res, next) => {
     // now we find the user in the database by username
     // the + here means add on top of all the prop being retrieved by 
     // default
-    const user = await User.findOne({ username }).select('+password');
+    const user = await User.findOne({ username, verified: true }).select('+password');
     // now this password field can be null too because let say a google
     // authenticated user tries to login using a random  password, but in the
     // database its null so we have to check it right here
@@ -178,7 +242,7 @@ module.exports.gaurd = async (req, res, next) => {
 module.exports.forgotPassword = async (req, res, next) => {
   try {
     // find the user by email
-    const user = await User.findOne({ email: req.body.email });
+    const user = await User.findOne({ email: req.body.email, verified: true });
     // if the user is not found send an error response
     // oauth users would never pass this check
     if (!user || user.provider !== 'local') {
@@ -215,7 +279,7 @@ module.exports.forgotPassword = async (req, res, next) => {
 
       res.status(200).json({
         status: 'Success',
-        message: "Token sent to user's email"
+        message: 'Token sent to user\'s email'
       });
     } catch (err) {
       user.passwordResetToken = undefined;
