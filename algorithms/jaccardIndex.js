@@ -28,5 +28,5 @@ module.exports = function getSimilarity(stringA, stringB) {
   let setB = new Set(stringB);
   let _union = union(setA, setB).size;
   let _intersection = intersection(setA, setB).size;
-  return similarityIndex = _intersection / _union;
+  return _intersection / _union;
 }
