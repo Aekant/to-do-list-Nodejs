@@ -1,4 +1,4 @@
-const Queue = require('Bull');
+const Queue = require('bull');
 const logger = require('./../../utils/logger');
 
 // creates a queue for jobs to be executed on task documents

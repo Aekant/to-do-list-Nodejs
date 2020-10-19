@@ -1,5 +1,5 @@
 const jaccardSimilarity = require('./jaccardIndex');
-const gestaltSimilarity = require('./Gestalt');
+const gestaltSimilarity = require('./gestalt');
 
 module.exports = function similarStrings(tasks) {
   // takes a tasks slugs array
