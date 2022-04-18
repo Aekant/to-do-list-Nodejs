@@ -4,9 +4,9 @@ const User = require('./../models/userModel');
 
 module.exports = (passport) => {
   passport.use(new googleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'http://localhost:3000/users/auth/google/redirect'
+    clientID: process.env.GOOGLE_OAUTH2_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_OAUTH2_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_OAUTH2_REDIRECT_URL
   }, async function (access_token, refresh_token, profile, done) {
 
     try {
